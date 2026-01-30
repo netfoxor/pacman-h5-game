@@ -1,7 +1,7 @@
 // Game constants
 const CELL_SIZE = 30;
 const PACMAN_SPEED = 2;
-const GHOST_SPEED = 1;
+const GHOST_SPEED = 0.7;  // Reduced speed to make ghosts slower
 const DOT_SIZE = 4;
 
 // Key states for continuous movement
@@ -110,6 +110,7 @@ function initGame() {
 
 // Draw the maze
 function drawMaze() {
+    // Draw all walls first to ensure proper layering
     for (let row = 0; row < mazeLayout.length; row++) {
         for (let col = 0; col < mazeLayout[row].length; col++) {
             const x = col * CELL_SIZE;
@@ -118,12 +119,20 @@ function drawMaze() {
             if (mazeLayout[row][col] === 1) { // Wall
                 ctx.fillStyle = '#2233AA';
                 ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
-                
-                // Add some detail to walls - draw connecting borders to adjacent walls
+            }
+        }
+    }
+    
+    // Then draw borders to ensure connection between adjacent walls
+    for (let row = 0; row < mazeLayout.length; row++) {
+        for (let col = 0; col < mazeLayout[row].length; col++) {
+            const x = col * CELL_SIZE;
+            const y = row * CELL_SIZE;
+            
+            if (mazeLayout[row][col] === 1) { // Wall
+                // Draw border on all sides
                 ctx.strokeStyle = '#4466FF';
                 ctx.lineWidth = 2;
-                
-                // Draw border on all sides
                 ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
                 
                 // Draw additional connecting lines to adjacent walls to ensure visual continuity
@@ -132,6 +141,9 @@ function drawMaze() {
                 
                 // Check adjacent cells and draw connecting lines if they are also walls
                 if (col > 0 && mazeLayout[row][col-1] === 1) { // Left neighbor is wall
+                    // Already connected by left wall's right edge
+                } else {
+                    // Draw left edge if no left neighbor wall
                     ctx.beginPath();
                     ctx.moveTo(x, y);
                     ctx.lineTo(x, y + CELL_SIZE);
@@ -139,6 +151,9 @@ function drawMaze() {
                 }
                 
                 if (col < mazeLayout[row].length - 1 && mazeLayout[row][col+1] === 1) { // Right neighbor is wall
+                    // Connected by right neighbor's left edge, so don't redraw
+                } else {
+                    // Draw right edge if no right neighbor wall
                     ctx.beginPath();
                     ctx.moveTo(x + CELL_SIZE, y);
                     ctx.lineTo(x + CELL_SIZE, y + CELL_SIZE);
@@ -146,6 +161,9 @@ function drawMaze() {
                 }
                 
                 if (row > 0 && mazeLayout[row-1][col] === 1) { // Top neighbor is wall
+                    // Already connected by top wall's bottom edge
+                } else {
+                    // Draw top edge if no top neighbor wall
                     ctx.beginPath();
                     ctx.moveTo(x, y);
                     ctx.lineTo(x + CELL_SIZE, y);
@@ -153,6 +171,9 @@ function drawMaze() {
                 }
                 
                 if (row < mazeLayout.length - 1 && mazeLayout[row+1][col] === 1) { // Bottom neighbor is wall
+                    // Connected by bottom neighbor's top edge, so don't redraw
+                } else {
+                    // Draw bottom edge if no bottom neighbor wall
                     ctx.beginPath();
                     ctx.moveTo(x, y + CELL_SIZE);
                     ctx.lineTo(x + CELL_SIZE, y + CELL_SIZE);
@@ -305,18 +326,25 @@ function movePacman() {
                 break;
         }
         
-        // Check collision with walls
-        const gridX = Math.floor(newX / CELL_SIZE);
-        const gridY = Math.floor(newY / CELL_SIZE);
+        // Check collision with walls - make sure we're checking the right grid positions
+        const currentGridX = Math.floor(gameState.pacman.x / CELL_SIZE);
+        const currentGridY = Math.floor(gameState.pacman.y / CELL_SIZE);
+        const newGridX = Math.floor(newX / CELL_SIZE);
+        const newGridY = Math.floor(newY / CELL_SIZE);
         
-        if (gridX >= 0 && gridX < mazeLayout[0].length && gridY >= 0 && gridY < mazeLayout.length) {
-            if (mazeLayout[gridY][gridX] !== 1) { // Not a wall
+        // Only allow movement if the destination is not a wall
+        if (newGridX >= 0 && newGridX < mazeLayout[0].length && 
+            newGridY >= 0 && newGridY < mazeLayout.length) {
+            if (mazeLayout[newGridY][newGridX] !== 1) { // Not a wall
                 gameState.pacman.x = newX;
                 gameState.pacman.y = newY;
             } else {
-                // Revert to original direction if hitting a wall, but keep nextDirection for retry
+                // If trying to move into a wall, revert to original direction but keep nextDirection
                 gameState.pacman.direction = originalDirection;
             }
+        } else {
+            // If out of bounds, revert to original direction
+            gameState.pacman.direction = originalDirection;
         }
     }
     
