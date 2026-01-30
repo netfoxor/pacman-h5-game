@@ -71,15 +71,15 @@ function initGame() {
                     y: row * CELL_SIZE + CELL_SIZE / 2,
                     eaten: false
                 });
-            } else if (cellType === 2) { // Empty space (possible spawn point)
-                // Only use certain empty spaces for ghost/pacman spawning
-                if ((row === 9 && col === 9)) { // Center of the map
-                    gameState.pacman.x = col * CELL_SIZE + CELL_SIZE / 2;
-                    gameState.pacman.y = row * CELL_SIZE + CELL_SIZE / 2;
-                }
-            }
+            } 
         }
     }
+    
+    // Set initial Pacman position (find an empty space in the maze)
+    gameState.pacman.x = 9 * CELL_SIZE + CELL_SIZE / 2;
+    gameState.pacman.y = 15 * CELL_SIZE + CELL_SIZE / 2;
+    gameState.pacman.direction = 'right';
+    gameState.pacman.nextDirection = 'right';
     
     gameState.dotsRemaining = gameState.dots.filter(dot => !dot.eaten).length;
     
@@ -147,22 +147,25 @@ function drawPacman() {
     
     let startAngle, endAngle;
     
+    // Calculate mouth openness based on animation state
+    const mouthOpenAmount = (gameState.mouthOpen > 1 ? 0.2 : 0.4) * Math.PI;
+    
     switch(gameState.pacman.direction) {
         case 'right':
-            startAngle = 0.2 * Math.PI + (gameState.mouthOpen > 1 ? 0.1 * Math.PI : 0);
-            endAngle = 1.8 * Math.PI - (gameState.mouthOpen > 1 ? 0.1 * Math.PI : 0);
+            startAngle = mouthOpenAmount;
+            endAngle = 2 * Math.PI - mouthOpenAmount;
             break;
         case 'down':
-            startAngle = 0.7 * Math.PI + (gameState.mouthOpen > 1 ? 0.1 * Math.PI : 0);
-            endAngle = 1.3 * Math.PI - (gameState.mouthOpen > 1 ? 0.1 * Math.PI : 0);
+            startAngle = 0.5 * Math.PI + mouthOpenAmount;
+            endAngle = 0.5 * Math.PI - mouthOpenAmount;
             break;
         case 'left':
-            startAngle = 1.2 * Math.PI + (gameState.mouthOpen > 1 ? 0.1 * Math.PI : 0);
-            endAngle = 0.8 * Math.PI - (gameState.mouthOpen > 1 ? 0.1 * Math.PI : 0);
+            startAngle = Math.PI + mouthOpenAmount;
+            endAngle = Math.PI - mouthOpenAmount;
             break;
         case 'up':
-            startAngle = 1.7 * Math.PI + (gameState.mouthOpen > 1 ? 0.1 * Math.PI : 0);
-            endAngle = 0.3 * Math.PI - (gameState.mouthOpen > 1 ? 0.1 * Math.PI : 0);
+            startAngle = 1.5 * Math.PI + mouthOpenAmount;
+            endAngle = 1.5 * Math.PI - mouthOpenAmount;
             break;
     }
     
@@ -227,10 +230,10 @@ function movePacman() {
             newX -= PACMAN_SPEED;
             break;
         case 'up':
-            newY -= PACMAN_SPEED;
+            newY -= PACMAN_SPEED;  // Moving up means decreasing Y coordinate
             break;
         case 'down':
-            newY += PACMAN_SPEED;
+            newY += PACMAN_SPEED;  // Moving down means increasing Y coordinate
             break;
     }
     
@@ -243,7 +246,7 @@ function movePacman() {
             gameState.pacman.x = newX;
             gameState.pacman.y = newY;
         } else {
-            // Revert direction if invalid
+            // Revert to original direction if hitting a wall, but keep nextDirection for retry
             gameState.pacman.direction = originalDirection;
         }
     }
@@ -359,19 +362,11 @@ function loseLife() {
 
 // Reset positions after losing a life
 function resetPositions() {
-    // Find initial positions again
-    for (let row = 0; row < mazeLayout.length; row++) {
-        for (let col = 0; col < mazeLayout[row].length; col++) {
-            const cellType = mazeLayout[row][col];
-            
-            if (cellType === 2) { // Empty space (possible spawn point)
-                if ((row === 9 && col === 9)) { // Center of the map
-                    gameState.pacman.x = col * CELL_SIZE + CELL_SIZE / 2;
-                    gameState.pacman.y = row * CELL_SIZE + CELL_SIZE / 2;
-                }
-            }
-        }
-    }
+    // Reset Pacman position
+    gameState.pacman.x = 9 * CELL_SIZE + CELL_SIZE / 2;
+    gameState.pacman.y = 15 * CELL_SIZE + CELL_SIZE / 2;
+    gameState.pacman.direction = 'right';
+    gameState.pacman.nextDirection = 'right';
     
     // Reset ghost positions
     gameState.ghosts[0].x = 8 * CELL_SIZE + CELL_SIZE / 2;
