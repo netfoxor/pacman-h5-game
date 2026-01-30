@@ -4,6 +4,14 @@ const PACMAN_SPEED = 2;
 const GHOST_SPEED = 1;
 const DOT_SIZE = 4;
 
+// Key states for continuous movement
+const keys = {
+    ArrowUp: false,
+    ArrowDown: false,
+    ArrowLeft: false,
+    ArrowRight: false
+};
+
 // Game state
 let gameState = {
     score: 0,
@@ -20,7 +28,9 @@ let gameState = {
     },
     gameOver: false,
     gameWon: false,
-    dotsRemaining: 0
+    dotsRemaining: 0,
+    invulnerable: false,  // Whether Pacman is currently invulnerable
+    invulnerabilityTimer: 0  // Timer for invulnerability period
 };
 
 // Maze layout (1 = wall, 0 = dot, 2 = empty, 3 = power pellet - simplified version)
@@ -109,10 +119,45 @@ function drawMaze() {
                 ctx.fillStyle = '#2233AA';
                 ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
                 
-                // Add some detail to walls
+                // Add some detail to walls - draw connecting borders to adjacent walls
                 ctx.strokeStyle = '#4466FF';
                 ctx.lineWidth = 2;
+                
+                // Draw border on all sides
                 ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+                
+                // Draw additional connecting lines to adjacent walls to ensure visual continuity
+                ctx.strokeStyle = '#5577CC';
+                ctx.lineWidth = 1;
+                
+                // Check adjacent cells and draw connecting lines if they are also walls
+                if (col > 0 && mazeLayout[row][col-1] === 1) { // Left neighbor is wall
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x, y + CELL_SIZE);
+                    ctx.stroke();
+                }
+                
+                if (col < mazeLayout[row].length - 1 && mazeLayout[row][col+1] === 1) { // Right neighbor is wall
+                    ctx.beginPath();
+                    ctx.moveTo(x + CELL_SIZE, y);
+                    ctx.lineTo(x + CELL_SIZE, y + CELL_SIZE);
+                    ctx.stroke();
+                }
+                
+                if (row > 0 && mazeLayout[row-1][col] === 1) { // Top neighbor is wall
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + CELL_SIZE, y);
+                    ctx.stroke();
+                }
+                
+                if (row < mazeLayout.length - 1 && mazeLayout[row+1][col] === 1) { // Bottom neighbor is wall
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + CELL_SIZE);
+                    ctx.lineTo(x + CELL_SIZE, y + CELL_SIZE);
+                    ctx.stroke();
+                }
             }
         }
     }
@@ -140,6 +185,16 @@ function drawPacman() {
     if (gameState.mouthChange > 5) {
         gameState.mouthOpen = (gameState.mouthOpen + 1) % 4;
         gameState.mouthChange = 0;
+    }
+    
+    // Determine if Pacman should be visible during invulnerability (blink effect)
+    if (gameState.invulnerable) {
+        // Blink every 10 frames
+        const blinkPhase = Math.floor(gameState.invulnerabilityTimer / 10) % 2;
+        if (blinkPhase === 0) {
+            // Skip drawing Pacman during this frame
+            return;
+        }
     }
     
     ctx.fillStyle = '#FFFF00'; // Yellow
@@ -214,40 +269,54 @@ function drawGhosts() {
 function movePacman() {
     if (gameState.gameOver || gameState.gameWon) return;
     
-    // Attempt to change direction if requested
-    const originalDirection = gameState.pacman.direction;
-    gameState.pacman.direction = gameState.pacman.nextDirection;
-    
-    // Check if the next move is valid (not a wall)
-    let newX = gameState.pacman.x;
-    let newY = gameState.pacman.y;
-    
-    switch (gameState.pacman.direction) {
-        case 'right':
-            newX += PACMAN_SPEED;
-            break;
-        case 'left':
-            newX -= PACMAN_SPEED;
-            break;
-        case 'up':
-            newY -= PACMAN_SPEED;  // Moving up means decreasing Y coordinate
-            break;
-        case 'down':
-            newY += PACMAN_SPEED;  // Moving down means increasing Y coordinate
-            break;
+    // Update direction based on pressed keys
+    if (keys.ArrowUp) {
+        gameState.pacman.nextDirection = 'up';
+    } else if (keys.ArrowDown) {
+        gameState.pacman.nextDirection = 'down';
+    } else if (keys.ArrowLeft) {
+        gameState.pacman.nextDirection = 'left';
+    } else if (keys.ArrowRight) {
+        gameState.pacman.nextDirection = 'right';
     }
     
-    // Check collision with walls
-    const gridX = Math.floor(newX / CELL_SIZE);
-    const gridY = Math.floor(newY / CELL_SIZE);
-    
-    if (gridX >= 0 && gridX < mazeLayout[0].length && gridY >= 0 && gridY < mazeLayout.length) {
-        if (mazeLayout[gridY][gridX] !== 1) { // Not a wall
-            gameState.pacman.x = newX;
-            gameState.pacman.y = newY;
-        } else {
-            // Revert to original direction if hitting a wall, but keep nextDirection for retry
-            gameState.pacman.direction = originalDirection;
+    // Only move if a key is pressed
+    if (keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
+        // Attempt to change direction if requested
+        const originalDirection = gameState.pacman.direction;
+        gameState.pacman.direction = gameState.pacman.nextDirection;
+        
+        // Check if the next move is valid (not a wall)
+        let newX = gameState.pacman.x;
+        let newY = gameState.pacman.y;
+        
+        switch (gameState.pacman.direction) {
+            case 'right':
+                newX += PACMAN_SPEED;
+                break;
+            case 'left':
+                newX -= PACMAN_SPEED;
+                break;
+            case 'up':
+                newY -= PACMAN_SPEED;  // Moving up means decreasing Y coordinate
+                break;
+            case 'down':
+                newY += PACMAN_SPEED;  // Moving down means increasing Y coordinate
+                break;
+        }
+        
+        // Check collision with walls
+        const gridX = Math.floor(newX / CELL_SIZE);
+        const gridY = Math.floor(newY / CELL_SIZE);
+        
+        if (gridX >= 0 && gridX < mazeLayout[0].length && gridY >= 0 && gridY < mazeLayout.length) {
+            if (mazeLayout[gridY][gridX] !== 1) { // Not a wall
+                gameState.pacman.x = newX;
+                gameState.pacman.y = newY;
+            } else {
+                // Revert to original direction if hitting a wall, but keep nextDirection for retry
+                gameState.pacman.direction = originalDirection;
+            }
         }
     }
     
@@ -257,6 +326,9 @@ function movePacman() {
 
 // Collect dots
 function collectDots() {
+    // Don't collect dots when invulnerable
+    if (gameState.invulnerable) return;
+    
     gameState.dots.forEach(dot => {
         if (!dot.eaten) {
             const distance = Math.sqrt(
@@ -284,48 +356,101 @@ function moveGhosts() {
     if (gameState.gameOver || gameState.gameWon) return;
     
     gameState.ghosts.forEach(ghost => {
+        // Only move ghosts on grid centers to ensure proper movement
+        const currentGridX = Math.floor(ghost.x / CELL_SIZE);
+        const currentGridY = Math.floor(ghost.y / CELL_SIZE);
+        const centerX = currentGridX * CELL_SIZE + CELL_SIZE / 2;
+        const centerY = currentGridY * CELL_SIZE + CELL_SIZE / 2;
+        
+        // Align ghost to grid center if not already aligned
+        if (Math.abs(ghost.x - centerX) > 1 || Math.abs(ghost.y - centerY) > 1) {
+            ghost.x = centerX;
+            ghost.y = centerY;
+            return; // Wait until aligned to grid before continuing movement
+        }
+        
         // Simple AI: occasionally change direction randomly
-        if (Math.random() < 0.02) {
+        if (Math.random() < 0.05) { // Increased chance to change direction
             const directions = ['up', 'down', 'left', 'right'];
-            ghost.direction = directions[Math.floor(Math.random() * directions.length)];
+            const validDirections = [];
+            
+            // Check which directions are valid
+            for (const dir of directions) {
+                let testX = currentGridX;
+                let testY = currentGridY;
+                
+                switch (dir) {
+                    case 'right': testX++; break;
+                    case 'left': testX--; break;
+                    case 'down': testY++; break;
+                    case 'up': testY--; break;
+                }
+                
+                if (testX >= 0 && testX < mazeLayout[0].length && 
+                    testY >= 0 && testY < mazeLayout.length && 
+                    mazeLayout[testY][testX] !== 1) {
+                    validDirections.push(dir);
+                }
+            }
+            
+            if (validDirections.length > 0) {
+                ghost.direction = validDirections[Math.floor(Math.random() * validDirections.length)];
+            }
         }
         
         // Calculate next position based on direction
-        let newX = ghost.x;
-        let newY = ghost.y;
+        let newGridX = currentGridX;
+        let newGridY = currentGridY;
         
         switch (ghost.direction) {
             case 'right':
-                newX += GHOST_SPEED;
+                newGridX++;
                 break;
             case 'left':
-                newX -= GHOST_SPEED;
+                newGridX--;
                 break;
             case 'up':
-                newY -= GHOST_SPEED;
+                newGridY--;
                 break;
             case 'down':
-                newY += GHOST_SPEED;
+                newGridY++;
                 break;
         }
         
         // Check if the move is valid (not a wall)
-        const gridX = Math.floor(newX / CELL_SIZE);
-        const gridY = Math.floor(newY / CELL_SIZE);
-        
-        if (gridX >= 0 && gridX < mazeLayout[0].length && gridY >= 0 && gridY < mazeLayout.length) {
-            if (mazeLayout[gridY][gridX] !== 1) { // Not a wall
-                ghost.x = newX;
-                ghost.y = newY;
-            } else {
-                // Change direction if hitting a wall
-                const directions = ['up', 'down', 'left', 'right'];
-                ghost.direction = directions[Math.floor(Math.random() * directions.length)];
-            }
+        if (newGridX >= 0 && newGridX < mazeLayout[0].length && 
+            newGridY >= 0 && newGridY < mazeLayout.length && 
+            mazeLayout[newGridY][newGridX] !== 1) {
+            // Move ghost to new grid center
+            ghost.x = newGridX * CELL_SIZE + CELL_SIZE / 2;
+            ghost.y = newGridY * CELL_SIZE + CELL_SIZE / 2;
         } else {
-            // Change direction if going out of bounds
+            // Change direction if hitting a wall
             const directions = ['up', 'down', 'left', 'right'];
-            ghost.direction = directions[Math.floor(Math.random() * directions.length)];
+            const validDirections = [];
+            
+            // Check which directions are valid
+            for (const dir of directions) {
+                let testX = currentGridX;
+                let testY = currentGridY;
+                
+                switch (dir) {
+                    case 'right': testX++; break;
+                    case 'left': testX--; break;
+                    case 'down': testY++; break;
+                    case 'up': testY--; break;
+                }
+                
+                if (testX >= 0 && testX < mazeLayout[0].length && 
+                    testY >= 0 && testY < mazeLayout.length && 
+                    mazeLayout[testY][testX] !== 1) {
+                    validDirections.push(dir);
+                }
+            }
+            
+            if (validDirections.length > 0) {
+                ghost.direction = validDirections[Math.floor(Math.random() * validDirections.length)];
+            }
         }
     });
     
@@ -335,6 +460,9 @@ function moveGhosts() {
 
 // Check collision with ghosts
 function checkGhostCollision() {
+    // Only check collision if Pacman is not invulnerable
+    if (gameState.invulnerable) return;
+    
     gameState.ghosts.forEach(ghost => {
         const distance = Math.sqrt(
             Math.pow(gameState.pacman.x - ghost.x, 2) + 
@@ -349,12 +477,19 @@ function checkGhostCollision() {
 
 // Lose a life
 function loseLife() {
+    // Only allow losing life if not already invulnerable
+    if (gameState.invulnerable) return;
+    
     gameState.lives--;
     document.getElementById('lives').textContent = gameState.lives;
     
     if (gameState.lives <= 0) {
         gameOver();
     } else {
+        // Make Pacman invulnerable for 3 seconds (180 frames at 60fps)
+        gameState.invulnerable = true;
+        gameState.invulnerabilityTimer = 180; // 3 seconds at 60fps
+        
         // Reset positions
         resetPositions();
     }
@@ -393,27 +528,22 @@ function winGame() {
     document.getElementById('winScreen').classList.remove('hidden');
 }
 
-// Handle keyboard input
+// Handle keyboard input for continuous movement
 function handleKeyDown(e) {
     if (gameState.gameOver || gameState.gameWon) return;
     
-    switch(e.key) {
-        case 'ArrowUp':
-            gameState.pacman.nextDirection = 'up';
-            e.preventDefault();
-            break;
-        case 'ArrowDown':
-            gameState.pacman.nextDirection = 'down';
-            e.preventDefault();
-            break;
-        case 'ArrowLeft':
-            gameState.pacman.nextDirection = 'left';
-            e.preventDefault();
-            break;
-        case 'ArrowRight':
-            gameState.pacman.nextDirection = 'right';
-            e.preventDefault();
-            break;
+    if (keys.hasOwnProperty(e.key)) {
+        keys[e.key] = true;
+        e.preventDefault();
+    }
+}
+
+function handleKeyUp(e) {
+    if (gameState.gameOver || gameState.gameWon) return;
+    
+    if (keys.hasOwnProperty(e.key)) {
+        keys[e.key] = false;
+        e.preventDefault();
     }
 }
 
@@ -432,6 +562,14 @@ function gameLoop() {
     movePacman();
     moveGhosts();
     
+    // Update invulnerability timer
+    if (gameState.invulnerable) {
+        gameState.invulnerabilityTimer--;
+        if (gameState.invulnerabilityTimer <= 0) {
+            gameState.invulnerable = false;
+        }
+    }
+    
     // Continue game loop
     if (!gameState.gameOver && !gameState.gameWon) {
         requestAnimationFrame(gameLoop);
@@ -440,6 +578,7 @@ function gameLoop() {
 
 // Event listeners
 document.addEventListener('keydown', handleKeyDown);
+document.addEventListener('keyup', handleKeyUp);
 
 document.getElementById('restartButton').addEventListener('click', () => {
     initGame();
