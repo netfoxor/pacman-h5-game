@@ -44,4 +44,22 @@ build/
 .DS_Store
 ehthumbs.db
 Icon?
+Thumbs.dbnode_modules/
+# Dependency directories
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Environment variables
+.env
+.env.local
+
+# Log files
+*.log
+
+# OS generated files
+.DS_Store
 Thumbs.db
