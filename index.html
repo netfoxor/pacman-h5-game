@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H5 Pacman Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>Pacman Game</h1>
+            <div class="score-board">
+                <div class="score">Score: <span id="score">0</span></div>
+                <div class="lives">Lives: <span id="lives">3</span></div>
+            </div>
+        </header>
+        
+        <div class="game-wrapper">
+            <canvas id="gameCanvas" width="600" height="600"></canvas>
+            <div id="gameOver" class="overlay hidden">
+                <h2>Game Over</h2>
+                <p>Your score: <span id="finalScore">0</span></p>
+                <button id="restartButton">Play Again</button>
+            </div>
+            <div id="winScreen" class="overlay hidden">
+                <h2>You Win!</h2>
+                <p>Final score: <span id="winScore">0</span></p>
+                <button id="playAgainButton">Play Again</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <p>Use Arrow Keys to move Pacman</p>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>

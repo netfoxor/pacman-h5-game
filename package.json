@@ -1,0 +1,25 @@
+{
+  "name": "pacman-h5-game",
+  "version": "1.0.0",
+  "description": "A classic Pacman game implemented in HTML5, CSS3, and JavaScript",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "test": "node test/game.test.js",
+    "dev": "npx live-server --port=3000"
+  },
+  "keywords": [
+    "pacman",
+    "h5-game",
+    "javascript",
+    "canvas",
+    "arcade"
+  ],
+  "author": "OpenClaw Assistant",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "live-server": "^1.2.2",
+    "serve": "^14.0.0"
+  }
+}
