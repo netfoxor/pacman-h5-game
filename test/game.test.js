@@ -1,9 +1,12 @@
+// Import Jest
+const { describe, it, expect, beforeEach } = require('@jest/globals');
+
 // Mock DOM elements for testing
 Object.assign(global, {
   window: {},
   document: {
-    getElementById: jest.fn(),
-    addEventListener: jest.fn()
+    getElementById: () => ({ getContext: () => ({}) }),
+    addEventListener: () => {}
   },
   HTMLCanvasElement: {
     prototype: {}
@@ -11,18 +14,18 @@ Object.assign(global, {
 });
 
 // Mock canvas
-HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
-  clearRect: jest.fn(),
-  fillRect: jest.fn(),
-  beginPath: jest.fn(),
-  arc: jest.fn(),
-  fill: jest.fn(),
-  closePath: jest.fn(),
-  strokeRect: jest.fn(),
-  moveTo: jest.fn(),
-  lineTo: jest.fn(),
-  stroke: jest.fn()
-}));
+HTMLCanvasElement.prototype.getContext = () => ({
+  clearRect: () => {},
+  fillRect: () => {},
+  beginPath: () => {},
+  arc: () => {},
+  fill: () => {},
+  closePath: () => {},
+  strokeRect: () => {},
+  moveTo: () => {},
+  lineTo: () => {},
+  stroke: () => {}
+});
 
 // We'll test the core game logic functions
 // Since we can't easily test the full game with Jest due to browser APIs,

@@ -5,8 +5,9 @@
   "main": "index.html",
   "scripts": {
     "start": "npx serve .",
-    "test": "node test/game.test.js",
-    "dev": "npx live-server --port=3000"
+    "test": "npx jest",
+    "dev": "npx live-server --port=3000",
+    "build": "mkdir -p dist && cp index.html styles.css game.js README.md package.json dist/"
   },
   "keywords": [
     "pacman",
