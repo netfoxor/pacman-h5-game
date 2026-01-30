@@ -1,7 +1,7 @@
 // Game constants
 const CELL_SIZE = 30;
 const PACMAN_SPEED = 2;
-const GHOST_SPEED = 0.5;  // Further reduced speed to make ghosts slower
+const GHOST_SPEED = 0.3;  // Further reduced speed to make them move much more slowly
 const DOT_SIZE = 4;
 
 // Key states for continuous movement
@@ -384,23 +384,14 @@ function moveGhosts() {
     if (gameState.gameOver || gameState.gameWon) return;
     
     gameState.ghosts.forEach(ghost => {
-        // Only move ghosts on grid centers to ensure proper movement
-        const currentGridX = Math.floor(ghost.x / CELL_SIZE);
-        const currentGridY = Math.floor(ghost.y / CELL_SIZE);
-        const centerX = currentGridX * CELL_SIZE + CELL_SIZE / 2;
-        const centerY = currentGridY * CELL_SIZE + CELL_SIZE / 2;
-        
-        // Align ghost to grid center if not already aligned
-        if (Math.abs(ghost.x - centerX) > 1 || Math.abs(ghost.y - centerY) > 1) {
-            ghost.x = centerX;
-            ghost.y = centerY;
-            return; // Wait until aligned to grid before continuing movement
-        }
-        
         // Simple AI: occasionally change direction randomly
-        if (Math.random() < 0.05) { // Increased chance to change direction
+        if (Math.random() < 0.02) { // Reduced chance to change direction to make them less erratic
             const directions = ['up', 'down', 'left', 'right'];
             const validDirections = [];
+            
+            // Calculate current grid position
+            const currentGridX = Math.floor(ghost.x / CELL_SIZE);
+            const currentGridY = Math.floor(ghost.y / CELL_SIZE);
             
             // Check which directions are valid
             for (const dir of directions) {
@@ -426,58 +417,65 @@ function moveGhosts() {
             }
         }
         
-        // Calculate next position based on direction
-        let newGridX = currentGridX;
-        let newGridY = currentGridY;
+        // Calculate next position based on direction and speed
+        let newX = ghost.x;
+        let newY = ghost.y;
         
         switch (ghost.direction) {
             case 'right':
-                newGridX++;
+                newX += GHOST_SPEED;
                 break;
             case 'left':
-                newGridX--;
+                newX -= GHOST_SPEED;
                 break;
             case 'up':
-                newGridY--;
+                newY -= GHOST_SPEED;
                 break;
             case 'down':
-                newGridY++;
+                newY += GHOST_SPEED;
                 break;
         }
         
         // Check if the move is valid (not a wall)
-        if (newGridX >= 0 && newGridX < mazeLayout[0].length && 
-            newGridY >= 0 && newGridY < mazeLayout.length && 
-            mazeLayout[newGridY][newGridX] !== 1) {
-            // Move ghost to new grid center
-            ghost.x = newGridX * CELL_SIZE + CELL_SIZE / 2;
-            ghost.y = newGridY * CELL_SIZE + CELL_SIZE / 2;
-        } else {
-            // Change direction if hitting a wall
-            const directions = ['up', 'down', 'left', 'right'];
-            const validDirections = [];
-            
-            // Check which directions are valid
-            for (const dir of directions) {
-                let testX = currentGridX;
-                let testY = currentGridY;
+        const gridX = Math.floor(newX / CELL_SIZE);
+        const gridY = Math.floor(newY / CELL_SIZE);
+        
+        if (gridX >= 0 && gridX < mazeLayout[0].length && 
+            gridY >= 0 && gridY < mazeLayout.length) {
+            if (mazeLayout[gridY][gridX] !== 1) { // Not a wall
+                ghost.x = newX;
+                ghost.y = newY;
+            } else {
+                // Change direction if hitting a wall
+                const directions = ['up', 'down', 'left', 'right'];
+                const validDirections = [];
                 
-                switch (dir) {
-                    case 'right': testX++; break;
-                    case 'left': testX--; break;
-                    case 'down': testY++; break;
-                    case 'up': testY--; break;
+                // Calculate current grid position
+                const currentGridX = Math.floor(ghost.x / CELL_SIZE);
+                const currentGridY = Math.floor(ghost.y / CELL_SIZE);
+                
+                // Check which directions are valid
+                for (const dir of directions) {
+                    let testX = currentGridX;
+                    let testY = currentGridY;
+                    
+                    switch (dir) {
+                        case 'right': testX++; break;
+                        case 'left': testX--; break;
+                        case 'down': testY++; break;
+                        case 'up': testY--; break;
+                    }
+                    
+                    if (testX >= 0 && testX < mazeLayout[0].length && 
+                        testY >= 0 && testY < mazeLayout.length && 
+                        mazeLayout[testY][testX] !== 1) {
+                        validDirections.push(dir);
+                    }
                 }
                 
-                if (testX >= 0 && testX < mazeLayout[0].length && 
-                    testY >= 0 && testY < mazeLayout.length && 
-                    mazeLayout[testY][testX] !== 1) {
-                    validDirections.push(dir);
+                if (validDirections.length > 0) {
+                    ghost.direction = validDirections[Math.floor(Math.random() * validDirections.length)];
                 }
-            }
-            
-            if (validDirections.length > 0) {
-                ghost.direction = validDirections[Math.floor(Math.random() * validDirections.length)];
             }
         }
     });
