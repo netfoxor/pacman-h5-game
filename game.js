@@ -1,7 +1,7 @@
 // Game constants
 const CELL_SIZE = 30;
 const PACMAN_SPEED = 2;
-const GHOST_SPEED = 0.7;  // Reduced speed to make ghosts slower
+const GHOST_SPEED = 0.5;  // Further reduced speed to make ghosts slower
 const DOT_SIZE = 4;
 
 // Key states for continuous movement
